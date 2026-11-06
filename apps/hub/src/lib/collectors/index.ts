@@ -41,11 +41,11 @@ export async function runSource(sourceId: string): Promise<{ fetched: number; tr
       touched.add(trend.id);
     }
     const previous = await db.trendItem.findUnique({ where: { platform_externalId: { platform: item.platform, externalId: item.externalId } }, select: { trendId: true } });
-    if (previous?.trendId && trendId && previous.trendId !== trendId) touched.add(previous.trendId);
+    if (previous?.trendId && previous.trendId !== trendId) touched.add(previous.trendId); // moved or untagged: old trend loses it
     await db.trendItem.upsert({
       where: { platform_externalId: { platform: item.platform, externalId: item.externalId } },
       create: { ...stripTags(item), sourceId, trendId },
-      update: { views: item.views, likes: item.likes, shares: item.shares, fetchedAt: new Date(), trendId: trendId ?? undefined },
+      update: { views: item.views, likes: item.likes, shares: item.shares, fetchedAt: new Date(), trendId },
     });
   }
   for (const id of touched) await rescoreTrend(id);
