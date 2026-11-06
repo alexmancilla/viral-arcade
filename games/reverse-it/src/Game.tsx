@@ -62,7 +62,7 @@ export function GuessPhraseGame({ invite, analytics, onExit }: GameProps) {
     if (isMatch(guess, answer)) {
       haptics.success();
       timer.stop();
-      finishRound(speedScore(timer.remainingMs, config.roundMs) - hints * 100);
+      finishRound(Math.max(0, speedScore(timer.remainingMs, config.roundMs) - hints * 100));
     } else {
       haptics.tap();
       setHints((h) => Math.min(config.maxHints, h + 1));
