@@ -119,11 +119,18 @@ export async function approveAndDispatch(formData: FormData) {
   const brief = await db.brief.findUniqueOrThrow({ where: { id } });
   const { dispatcher, configured } = getDispatcher();
   const raw = JSON.parse(brief.body);
-  const retry = await db.buildJob.findFirst({ where: { briefId: id, status: "failed", devinSessionId: null }, orderBy: { createdAt: "desc" } });
-  const job = retry ? await db.buildJob.update({ where: { id: retry.id }, data: { status: "queued", rawStatus: null } }) : await db.buildJob.create({ data: { briefId: id, status: "queued", request: "" } });
+  const promptOpts = { reviewerNotes: brief.reviewNotes || undefined };
+  const planned = (attemptId: string) => JSON.stringify(dispatcher.prepare(raw, { ...promptOpts, attemptId }).request, null, 2);
+  // Retry a failed attempt (same key) only when the request is byte-identical; an edited brief gets a new attempt.
+  const failed = await db.buildJob.findFirst({ where: { briefId: id, status: "failed", devinSessionId: null }, orderBy: { createdAt: "desc" } });
+  let job = failed && failed.request === planned(failed.id) ? await db.buildJob.update({ where: { id: failed.id }, data: { status: "queued", rawStatus: null } }) : null;
+  if (!job) {
+    job = await db.buildJob.create({ data: { briefId: id, status: "queued", request: "" } });
+    job = await db.buildJob.update({ where: { id: job.id }, data: { request: planned(job.id) } });
+  }
   let result;
   try {
-    result = await dispatcher.dispatch(raw, { reviewerNotes: brief.reviewNotes || undefined, attemptId: job.id });
+    result = await dispatcher.dispatch(raw, { ...promptOpts, attemptId: job.id });
   } catch (e) {
     await db.buildJob.update({ where: { id: job.id }, data: { status: "failed", rawStatus: e instanceof Error ? e.message : String(e) } });
     throw e;
