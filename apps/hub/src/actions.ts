@@ -121,6 +121,7 @@ export async function approveAndDispatch(formData: FormData) {
   const raw = JSON.parse(brief.body);
   const promptOpts = { reviewerNotes: brief.reviewNotes || undefined };
   const planned = (attemptId: string) => JSON.stringify(dispatcher.prepare(raw, { ...promptOpts, attemptId }).request, null, 2);
+  planned("validate"); // throws on an invalid brief before any BuildJob row exists
   // Retry a failed attempt (same key) only when the request is byte-identical; an edited brief gets a new attempt.
   const failed = await db.buildJob.findFirst({ where: { briefId: id, status: "failed", devinSessionId: null }, orderBy: { createdAt: "desc" } });
   let job = failed && failed.request === planned(failed.id) ? await db.buildJob.update({ where: { id: failed.id }, data: { status: "queued", rawStatus: null } }) : null;
