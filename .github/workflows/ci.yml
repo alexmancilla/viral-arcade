@@ -16,9 +16,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
-  eas-update-preview:
-    # Opt-in: set repository variable EAS_PREVIEW=true and secret EXPO_TOKEN. Same-repo PRs only so forks never see the token.
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.EAS_PREVIEW == 'true'
+  eas-update:
+    # Opt-in (repo variable EAS_PREVIEW=true + secret EXPO_TOKEN). Runs on merges only, never on PRs, so the token never meets untrusted code:
+    # develop -> EAS channel "preview" (staging builds), main -> channel "production".
+    if: github.event_name == 'push' && vars.EAS_PREVIEW == 'true'
     needs: check
     runs-on: ubuntu-latest
     steps:
@@ -33,9 +34,10 @@ jobs:
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-      - name: Publish to the shared preview channel (latest PR wins; preview APKs are built on channel "preview")
+      - name: Publish OTA update for this branch's channel
         working-directory: apps/arcade
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: eas update --channel preview --message "PR #${{ github.event.number }}: $PR_TITLE" --non-interactive
+          CHANNEL: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: eas update --channel "$CHANNEL" --message "${MESSAGE%%$'\n'*}" --non-interactive
