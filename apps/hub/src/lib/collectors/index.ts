@@ -40,6 +40,8 @@ export async function runSource(sourceId: string): Promise<{ fetched: number; tr
       trendId = trend.id;
       touched.add(trend.id);
     }
+    const previous = await db.trendItem.findUnique({ where: { platform_externalId: { platform: item.platform, externalId: item.externalId } }, select: { trendId: true } });
+    if (previous?.trendId && trendId && previous.trendId !== trendId) touched.add(previous.trendId);
     await db.trendItem.upsert({
       where: { platform_externalId: { platform: item.platform, externalId: item.externalId } },
       create: { ...stripTags(item), sourceId, trendId },
