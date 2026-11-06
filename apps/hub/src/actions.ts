@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { AppBriefSchema } from "@viral/devin-client";
 import { db } from "@/lib/db";
 import { runSource, rescoreTrend } from "@/lib/collectors";
-import { archetypes, draftBrief, type ArchetypeName } from "@/lib/briefs";
+import { REVIEW_STATUSES, archetypes, draftBrief, type ArchetypeName } from "@/lib/briefs";
 import { getDispatcher } from "@/lib/devin";
 
 export async function runSourceAction(formData: FormData) {
@@ -93,11 +93,22 @@ export async function generateBrief(formData: FormData) {
 export async function saveBrief(formData: FormData) {
   const id = String(formData.get("briefId"));
   const body = String(formData.get("body"));
-  const parsed = AppBriefSchema.safeParse(JSON.parse(body));
+  let json: unknown;
+  try {
+    json = JSON.parse(body);
+  } catch (e) {
+    await db.brief.update({ where: { id }, data: { body, reviewNotes: `Invalid: not valid JSON (${e instanceof Error ? e.message : String(e)})` } });
+    revalidatePath(`/briefs/${id}`);
+    return;
+  }
+  const parsed = AppBriefSchema.safeParse(json);
   if (!parsed.success) {
     await db.brief.update({ where: { id }, data: { body, reviewNotes: `Invalid: ${parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}` } });
   } else {
-    await db.brief.update({ where: { id }, data: { body: JSON.stringify(parsed.data, null, 2), slug: parsed.data.slug, title: parsed.data.title, archetype: parsed.data.archetype, status: String(formData.get("status") || "in_review"), reviewNotes: String(formData.get("reviewNotes") ?? "") } });
+    const requested = String(formData.get("status") || "");
+    const current = await db.brief.findUniqueOrThrow({ where: { id }, select: { status: true } });
+    const status = REVIEW_STATUSES.includes(requested) ? requested : current.status;
+    await db.brief.update({ where: { id }, data: { body: JSON.stringify(parsed.data, null, 2), slug: parsed.data.slug, title: parsed.data.title, archetype: parsed.data.archetype, status, reviewNotes: String(formData.get("reviewNotes") ?? "") } });
   }
   revalidatePath(`/briefs/${id}`);
 }
@@ -108,7 +119,8 @@ export async function approveAndDispatch(formData: FormData) {
   const brief = await db.brief.findUniqueOrThrow({ where: { id } });
   const { dispatcher, configured } = getDispatcher();
   const raw = JSON.parse(brief.body);
-  const job = await db.buildJob.create({ data: { briefId: id, status: "queued", request: "" } });
+  const retry = await db.buildJob.findFirst({ where: { briefId: id, status: "failed", devinSessionId: null }, orderBy: { createdAt: "desc" } });
+  const job = retry ? await db.buildJob.update({ where: { id: retry.id }, data: { status: "queued", rawStatus: null } }) : await db.buildJob.create({ data: { briefId: id, status: "queued", request: "" } });
   let result;
   try {
     result = await dispatcher.dispatch(raw, { reviewerNotes: brief.reviewNotes || undefined, attemptId: job.id });
@@ -127,7 +139,7 @@ export async function approveAndDispatch(formData: FormData) {
     },
   });
   await db.brief.update({ where: { id }, data: { status: configured ? "dispatched" : "approved" } });
-  await db.trend.update({ where: { id: brief.trendId }, data: { status: "building" } });
+  if (!result.dryRun) await db.trend.update({ where: { id: brief.trendId }, data: { status: "building" } });
   await db.game.upsert({ where: { slug: brief.slug }, update: { briefId: id }, create: { slug: brief.slug, title: brief.title, briefId: id, enabled: false } });
   redirect(`/builds#${job.id}`);
 }

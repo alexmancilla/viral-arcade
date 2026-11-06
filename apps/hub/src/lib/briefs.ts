@@ -37,3 +37,6 @@ export function draftBrief(input: { briefId: string; trendTitle: string; mechani
     acu_budget: 20,
   };
 }
+
+/** Statuses a reviewer may set by hand; dispatch-related statuses are only set by the system. */
+export const REVIEW_STATUSES = ["draft", "in_review", "rejected"];
