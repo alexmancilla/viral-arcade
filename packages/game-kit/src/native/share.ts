@@ -5,6 +5,9 @@ import { buildChallengeLink, buildSchemeLink, type InvitePayload, type LinkConfi
  * EXPO_PUBLIC_SHARE_HOST is the universal/app-link host (must match app.json associatedDomains / intentFilters).
  * Until a real domain is configured, shares fall back to the arcade:// scheme link, which opens for installed users.
  */
+// Expo inlines EXPO_PUBLIC_* only when referenced literally as process.env.X; game-kit has no node types.
+declare const process: { env: Record<string, string | undefined> };
+
 export const defaultLinkConfig: LinkConfig = { webHost: process.env.EXPO_PUBLIC_SHARE_HOST ?? "", scheme: "arcade" };
 
 export async function shareChallenge(opts: {
