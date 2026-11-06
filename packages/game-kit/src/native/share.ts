@@ -1,7 +1,11 @@
 import { Share } from "react-native";
-import { buildChallengeLink, type InvitePayload, type LinkConfig } from "../core/deeplink";
+import { buildChallengeLink, buildSchemeLink, type InvitePayload, type LinkConfig } from "../core/deeplink";
 
-export const defaultLinkConfig: LinkConfig = { webHost: "arcade.example.com", scheme: "arcade" };
+/**
+ * EXPO_PUBLIC_SHARE_HOST is the universal/app-link host (must match app.json associatedDomains / intentFilters).
+ * Until a real domain is configured, shares fall back to the arcade:// scheme link, which opens for installed users.
+ */
+export const defaultLinkConfig: LinkConfig = { webHost: process.env.EXPO_PUBLIC_SHARE_HOST ?? "", scheme: "arcade" };
 
 export async function shareChallenge(opts: {
   title: string;
@@ -9,7 +13,8 @@ export async function shareChallenge(opts: {
   invite: InvitePayload;
   link?: LinkConfig;
 }): Promise<"shared" | "dismissed"> {
-  const url = buildChallengeLink(opts.link ?? defaultLinkConfig, opts.invite);
+  const cfg = opts.link ?? defaultLinkConfig;
+  const url = cfg.webHost ? buildChallengeLink(cfg, opts.invite) : buildSchemeLink(cfg, opts.invite);
   try {
     const res = await Share.share({ title: opts.title, message: `${opts.message}\n${url}`, url });
     return res.action === Share.sharedAction ? "shared" : "dismissed";
