@@ -1,0 +1,8 @@
+appId: com.viral.arcade
+---
+- launchApp
+- tapOn: "__TITLE__"
+- tapOn: "Start"
+- tapOn: "Tap to reveal"
+- assertVisible:
+    id: "secret-word"
