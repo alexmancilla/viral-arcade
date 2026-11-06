@@ -53,3 +53,14 @@ describe("toBuildJobView", () => {
     expect(toBuildJobView({ ...base, status: "exit" }).status).toBe("failed");
   });
 });
+
+describe("idempotency per attempt", () => {
+  it("changes the idempotency key when an attemptId is given", async () => {
+    const { BuildDispatcher } = await import("../src/dispatcher");
+    const brief = (await import("../examples/reverse-it.brief.json")).default;
+    const d = new BuildDispatcher(null, { repo: "github.com/acme/arcade" });
+    expect(d.prepare(brief).request.idempotency_key).toBe(`brief-${brief.brief_id}`);
+    expect(d.prepare(brief, { attemptId: "job_1" }).request.idempotency_key).toBe(`brief-${brief.brief_id}-job_1`);
+    expect(d.prepare(brief, { attemptId: "job_2" }).request.idempotency_key).not.toBe(d.prepare(brief, { attemptId: "job_1" }).request.idempotency_key);
+  });
+});

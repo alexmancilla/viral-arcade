@@ -42,13 +42,18 @@ export async function addManualItem(formData: FormData) {
   const views = Number(formData.get("views") || 0);
   const platform = String(formData.get("platform") || "tiktok");
   const manual = (await db.source.findFirst({ where: { kind: "manual" } })) ?? (await db.source.create({ data: { id: "src_manual", name: "Team submissions", kind: "manual", cadenceH: 0 } }));
+  const existing = await db.trendItem.findUnique({ where: { platform_externalId: { platform, externalId: url } } });
   await db.trendItem.upsert({
     where: { platform_externalId: { platform, externalId: url } },
     create: { trendId, sourceId: manual.id, platform, externalId: url, url, caption: String(formData.get("caption") || ""), views, postedAt: new Date() },
-    update: { views },
+    update: { views, trendId },
   });
   await rescoreTrend(trendId);
   revalidatePath(`/trends/${trendId}`);
+  if (existing?.trendId && existing.trendId !== trendId) {
+    await rescoreTrend(existing.trendId);
+    revalidatePath(`/trends/${existing.trendId}`);
+  }
 }
 
 export async function createTrend(formData: FormData) {
@@ -103,10 +108,17 @@ export async function approveAndDispatch(formData: FormData) {
   const brief = await db.brief.findUniqueOrThrow({ where: { id } });
   const { dispatcher, configured } = getDispatcher();
   const raw = JSON.parse(brief.body);
-  const result = await dispatcher.dispatch(raw, { reviewerNotes: brief.reviewNotes || undefined });
-  const job = await db.buildJob.create({
+  const job = await db.buildJob.create({ data: { briefId: id, status: "queued", request: "" } });
+  let result;
+  try {
+    result = await dispatcher.dispatch(raw, { reviewerNotes: brief.reviewNotes || undefined, attemptId: job.id });
+  } catch (e) {
+    await db.buildJob.update({ where: { id: job.id }, data: { status: "failed", rawStatus: e instanceof Error ? e.message : String(e) } });
+    throw e;
+  }
+  await db.buildJob.update({
+    where: { id: job.id },
     data: {
-      briefId: id,
       status: result.dryRun ? "dry_run" : "queued",
       devinSessionId: result.session?.session_id ?? null,
       devinUrl: result.session?.url ?? null,

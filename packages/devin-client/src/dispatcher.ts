@@ -12,6 +12,11 @@ export interface DispatchConfig {
   platform?: string;
 }
 
+export interface DispatchOptions extends PromptOptions {
+  /** Unique id of this build attempt; folded into the idempotency key. */
+  attemptId?: string;
+}
+
 export interface DispatchResult {
   session: Session | null;
   request: CreateSessionRequest;
@@ -25,8 +30,12 @@ export interface DispatchResult {
 export class BuildDispatcher {
   constructor(private client: DevinClient | null, private cfg: DispatchConfig) {}
 
-  /** Validates the brief and builds the exact API request. Pure, so the hub can show it before sending. */
-  prepare(rawBrief: unknown, opts: PromptOptions = {}): { brief: AppBrief; request: CreateSessionRequest } {
+  /**
+   * Validates the brief and builds the exact API request. Pure, so the hub can show it before sending.
+   * Pass `attemptId` (persisted by the caller before the call) so re-approving a revised brief gets a
+   * fresh idempotency key while retries of the same attempt stay idempotent.
+   */
+  prepare(rawBrief: unknown, opts: DispatchOptions = {}): { brief: AppBrief; request: CreateSessionRequest } {
     const brief = AppBriefSchema.parse(rawBrief);
     const request: CreateSessionRequest = {
       title: sessionTitle(brief),
@@ -40,13 +49,13 @@ export class BuildDispatcher {
       knowledge_ids: this.cfg.knowledgeIds,
       structured_output_schema: buildOutputJsonSchema as unknown as Record<string, unknown>,
       structured_output_required: true,
-      idempotency_key: `brief-${brief.brief_id}`,
+      idempotency_key: opts.attemptId ? `brief-${brief.brief_id}-${opts.attemptId}` : `brief-${brief.brief_id}`,
     };
     return { brief, request };
   }
 
   /** Creates the session, or returns the request only when no client is configured (dry run). */
-  async dispatch(rawBrief: unknown, opts: PromptOptions = {}): Promise<DispatchResult> {
+  async dispatch(rawBrief: unknown, opts: DispatchOptions = {}): Promise<DispatchResult> {
     const { request } = this.prepare(rawBrief, opts);
     if (!this.client) return { session: null, request, dryRun: true };
     const session = await this.client.createSession(request);

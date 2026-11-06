@@ -44,4 +44,6 @@ jobs:
       - name: Publish preview channel for this PR
         if: env.EXPO_TOKEN != ''
         working-directory: apps/arcade
-        run: eas update --branch pr-${{ github.event.number }} --message "${{ github.event.pull_request.title }}" --non-interactive
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: eas update --branch "pr-${{ github.event.number }}" --message "$PR_TITLE" --non-interactive
