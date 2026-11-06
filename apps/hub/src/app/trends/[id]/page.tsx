@@ -26,8 +26,8 @@ export default async function TrendDetail({ params }: { params: Promise<{ id: st
             <input type="hidden" name="trendId" value={trend.id} />
             <textarea name="mechanic" rows={3} defaultValue={trend.mechanic} placeholder="What are people actually doing? Rules, inputs, win condition." />
             <div className="flex gap-2">
-              <select name="archetype" defaultValue={trend.archetype ?? ""}><option value="">no archetype</option>{archetypes.map((a) => <option key={a} value={a}>{a}</option>)}</select>
-              <select name="status" defaultValue={trend.status}>{["watching", "candidate", "briefed", "building", "live", "retired"].map((s) => <option key={s}>{s}</option>)}</select>
+              <select name="archetype" key={`a-${trend.archetype ?? ""}`} defaultValue={trend.archetype ?? ""}><option value="">no archetype</option>{archetypes.map((a) => <option key={a} value={a}>{a}</option>)}</select>
+              <select name="status" key={`s-${trend.status}`} defaultValue={trend.status}>{["watching", "candidate", "briefed", "building", "live", "retired"].map((s) => <option key={s}>{s}</option>)}</select>
             </div>
             <button className="btn-ghost self-start">Save</button>
           </form>

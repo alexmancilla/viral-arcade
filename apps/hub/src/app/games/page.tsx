@@ -8,7 +8,7 @@ export default async function Games() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold">Games and flags</h1>
-      <p className="text-sm text-zinc-400">What the arcade shows. The app fetches <code>/api/flags</code> at launch; flipping a flag here is how a merged game goes live without a store release.</p>
+      <p className="text-sm text-zinc-400">What the arcade shows. The arcade app fetches <code>/api/flags</code> at launch and when it returns to the foreground (set <code>EXPO_PUBLIC_HUB_URL</code> to this Hub); flipping a flag here is how a merged game goes live without a store release.</p>
       <table>
         <thead><tr><th>Slug</th><th>Title</th><th>Enabled</th><th>Regions</th><th></th></tr></thead>
         <tbody>
