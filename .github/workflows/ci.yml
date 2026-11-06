@@ -20,18 +20,28 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: check
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - name: Skip when EXPO_TOKEN is not configured
+        if: env.EXPO_TOKEN == ''
+        run: echo "EXPO_TOKEN secret not set; skipping EAS preview update."
       - uses: pnpm/action-setup@v4
+        if: env.EXPO_TOKEN != ''
       - uses: actions/setup-node@v4
+        if: env.EXPO_TOKEN != ''
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        if: env.EXPO_TOKEN != ''
       - uses: expo/expo-github-action@v8
+        if: env.EXPO_TOKEN != ''
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Publish preview channel for this PR
+        if: env.EXPO_TOKEN != ''
         working-directory: apps/arcade
         run: eas update --branch pr-${{ github.event.number }} --message "${{ github.event.pull_request.title }}" --non-interactive
