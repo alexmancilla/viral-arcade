@@ -17,7 +17,7 @@ export default async function BriefDetail({ params }: { params: Promise<{ id: st
   let preview: string | null = null;
   let problem: string | null = null;
   try {
-    preview = JSON.stringify(dispatcher.prepare(JSON.parse(brief.body), { attemptId: "<build id, assigned on approve>" }).request, null, 2);
+    preview = JSON.stringify(dispatcher.prepare(JSON.parse(brief.body), { reviewerNotes: brief.reviewNotes || undefined, attemptId: "<build id, assigned on approve>" }).request, null, 2);
   } catch (e) {
     problem = (e as Error).message;
   }
@@ -37,7 +37,7 @@ export default async function BriefDetail({ params }: { params: Promise<{ id: st
             <textarea name="body" rows={28} defaultValue={brief.body} className="font-mono text-xs" />
             <input name="reviewNotes" placeholder="Reviewer notes for Devin (optional)" defaultValue={brief.reviewNotes.startsWith("Invalid:") ? "" : brief.reviewNotes} />
             <div className="flex gap-2">
-              <select name="status" defaultValue={brief.status === "draft" ? "in_review" : brief.status} className="!w-40">{Array.from(new Set([...REVIEW_STATUSES, brief.status])).map((s) => <option key={s}>{s}</option>)}</select>
+              <select name="status" key={brief.status} defaultValue={brief.status === "draft" ? "in_review" : brief.status} className="!w-40">{Array.from(new Set([...REVIEW_STATUSES, brief.status])).map((s) => <option key={s}>{s}</option>)}</select>
               <button className="btn-ghost">Save</button>
             </div>
           </form>
