@@ -16,4 +16,5 @@ export function proxy(req: NextRequest) {
   return new NextResponse("Authentication required", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="Viral Hub"' } });
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
+/** /api/flags stays public: the arcade app polls it without team credentials. */
+export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|api/flags).*)"] };
