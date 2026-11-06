@@ -2,10 +2,11 @@ import { Link } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { theme } from "@viral/game-kit";
 import { games } from "@/registry";
-import { isEnabled } from "@/flags";
+import { isEnabled, useFlags } from "@/flags";
 
 export default function Home() {
-  const visible = games.filter(isEnabled);
+  const flags = useFlags();
+  const visible = games.filter((g) => isEnabled(g, flags));
   return (
     <View style={styles.root}>
       <Text style={styles.h1}>Arcade</Text>

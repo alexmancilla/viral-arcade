@@ -3,15 +3,16 @@ import { StyleSheet, Text, View } from "react-native";
 import { decodeInvite } from "@viral/game-kit/core";
 import { theme } from "@viral/game-kit";
 import { findGame } from "@/registry";
-import { isEnabled } from "@/flags";
+import { isEnabled, useFlags } from "@/flags";
 import { analytics } from "@/analytics";
 
 /** Deep link target: arcade://play/<slug>?invite=<token> and https://<host>/play/<slug>?invite=<token>. */
 export default function Play() {
   const { slug, invite } = useLocalSearchParams<{ slug: string; invite?: string }>();
   const router = useRouter();
+  const flags = useFlags();
   const game = findGame(slug);
-  if (!game || !isEnabled(game)) {
+  if (!game || !isEnabled(game, flags)) {
     return (
       <View style={styles.center}>
         <Text style={styles.text}>This game is not available here yet.</Text>
