@@ -17,33 +17,25 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
   eas-update-preview:
-    if: github.event_name == 'pull_request'
+    # Opt-in: set repository variable EAS_PREVIEW=true and secret EXPO_TOKEN. Same-repo PRs only so forks never see the token.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.EAS_PREVIEW == 'true'
     needs: check
     runs-on: ubuntu-latest
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Skip when EXPO_TOKEN is not configured
-        if: env.EXPO_TOKEN == ''
-        run: echo "EXPO_TOKEN secret not set; skipping EAS preview update."
       - uses: pnpm/action-setup@v4
-        if: env.EXPO_TOKEN != ''
       - uses: actions/setup-node@v4
-        if: env.EXPO_TOKEN != ''
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-        if: env.EXPO_TOKEN != ''
       - uses: expo/expo-github-action@v8
-        if: env.EXPO_TOKEN != ''
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-      - name: Publish preview channel for this PR
-        if: env.EXPO_TOKEN != ''
+      - name: Publish to the shared preview channel (latest PR wins; preview APKs are built on channel "preview")
         working-directory: apps/arcade
         env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: eas update --branch "pr-${{ github.event.number }}" --message "$PR_TITLE" --non-interactive
+        run: eas update --channel preview --message "PR #${{ github.event.number }}: $PR_TITLE" --non-interactive
