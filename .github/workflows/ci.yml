@@ -22,6 +22,10 @@ jobs:
     if: github.event_name == 'push' && vars.EAS_PREVIEW == 'true'
     needs: check
     runs-on: ubuntu-latest
+    # One publish per branch at a time; a newer push cancels an older in-flight one so the channel never rolls back.
+    concurrency:
+      group: eas-update-${{ github.ref_name }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
