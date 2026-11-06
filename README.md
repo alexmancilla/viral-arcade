@@ -35,3 +35,5 @@ pnpm dev:arcade -- --android
 Set `DEVIN_API_KEY` + `DEVIN_ORG_ID` in `apps/hub/.env` to make "Approve" create real Devin sessions; without them the Hub records a dry run and still shows the exact request.
 
 Dispatch a brief from the CLI: `pnpm devin:dispatch packages/devin-client/examples/reverse-it.brief.json --dry-run`.
+
+Deploying the Hub (Vercel + Neon Postgres): see `docs/deploy-hub.md`.

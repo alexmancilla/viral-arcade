@@ -1,0 +1,114 @@
+// Postgres (Neon) for the deployed Hub. Keep models identical to schema.prisma (checked by src/lib/schema-sync.test.ts).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Source {
+  id        String      @id @default(cuid())
+  name      String
+  kind      String      // sample | youtube_trending | reddit | manual
+  config    String      @default("{}") // JSON
+  enabled   Boolean     @default(true)
+  cadenceH  Int         @default(6)
+  lastRunAt DateTime?
+  lastError String?
+  items     TrendItem[]
+  createdAt DateTime    @default(now())
+}
+
+model Trend {
+  id         String      @id @default(cuid())
+  title      String
+  summary    String      @default("")
+  archetype  String?     // guess_phrase | impostor | reverse_words | reaction | vote
+  mechanic   String      @default("") // what people are doing, as rules
+  score      Float       @default(0)
+  velocity   Float       @default(0) // views per hour across items
+  platforms  String      @default("") // comma list
+  regions    String      @default("")
+  status     String      @default("watching") // watching | candidate | briefed | building | live | retired
+  firstSeen  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  items      TrendItem[]
+  briefs     Brief[]
+  notes      Note[]
+}
+
+model TrendItem {
+  id        String   @id @default(cuid())
+  trendId   String?
+  trend     Trend?   @relation(fields: [trendId], references: [id])
+  sourceId  String
+  source    Source   @relation(fields: [sourceId], references: [id])
+  platform  String
+  externalId String
+  url       String
+  caption   String   @default("")
+  author    String   @default("")
+  views     Int      @default(0)
+  likes     Int      @default(0)
+  shares    Int      @default(0)
+  postedAt  DateTime
+  fetchedAt DateTime @default(now())
+
+  @@unique([platform, externalId])
+}
+
+model Brief {
+  id          String     @id @default(cuid())
+  trendId     String
+  trend       Trend      @relation(fields: [trendId], references: [id])
+  slug        String
+  title       String
+  archetype   String
+  body        String     // full AppBrief JSON
+  status      String     @default("draft") // draft | in_review | approved | dispatched | rejected
+  createdBy   String     @default("team")
+  reviewNotes String     @default("")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  builds      BuildJob[]
+  notes       Note[]
+}
+
+model BuildJob {
+  id              String    @id @default(cuid())
+  briefId         String
+  brief           Brief     @relation(fields: [briefId], references: [id])
+  devinSessionId  String?
+  devinUrl        String?
+  status          String    @default("queued") // queued | running | pr_opened | blocked | failed | done | dry_run
+  rawStatus       String?
+  prUrl           String?
+  previewChannel  String?
+  acusConsumed    Float     @default(0)
+  request         String    @default("{}") // the exact Devin API request
+  output          String?   // structured output JSON
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Game {
+  slug      String   @id
+  title     String
+  enabled   Boolean  @default(false)
+  regions   String   @default("")
+  briefId   String?
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  author    String   @default("team")
+  body      String
+  trendId   String?
+  trend     Trend?   @relation(fields: [trendId], references: [id])
+  briefId   String?
+  brief     Brief?   @relation(fields: [briefId], references: [id])
+  createdAt DateTime @default(now())
+}
