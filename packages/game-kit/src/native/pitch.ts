@@ -36,7 +36,8 @@ export { hzToMidi, midiToNoteName, centsOff } from "../core/pitch";
 export type MicPermission = "unknown" | "granted" | "denied";
 
 async function requestMic(): Promise<MicPermission> {
-  if (Platform.OS !== "android") return "granted"; // iOS prompts on first capture using NSMicrophoneUsageDescription
+  // iOS: the system prompt appears when capture starts; we learn the answer from start() failing or the first sample arriving.
+  if (Platform.OS !== "android") return "unknown";
   const r = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
   return r === PermissionsAndroid.RESULTS.GRANTED ? "granted" : "denied";
 }
@@ -58,14 +59,18 @@ export function usePitch(opts: { active: boolean; minConfidence?: number; buffer
     requestMic().then((perm) => {
       if (cancelled) return;
       setPermission(perm);
-      if (perm !== "granted") return;
+      if (perm === "denied") return;
       pitchy.init({ bufferSize: opts.bufferSize ?? 4096 });
       sub = pitchy.addListener((e) => {
         // Silence or an unsure estimate clears the sample so games never act on a stale note.
+        setPermission("granted");
         if (e.pitch > 0 && e.confidence >= (opts.minConfidence ?? 0.8)) setSample({ hz: e.pitch, confidence: e.confidence, volume: e.volume });
         else setSample(null);
       });
-      pitchy.start().catch(() => setSample(null));
+      pitchy.start().catch(() => {
+        setSample(null);
+        setPermission("denied");
+      });
     });
     return () => {
       cancelled = true;
