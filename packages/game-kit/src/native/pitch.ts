@@ -51,7 +51,12 @@ export function usePitch(opts: { active: boolean; minConfidence?: number; buffer
 } {
   const [sample, setSample] = useState<PitchSample | null>(null);
   const [error, setError] = useState(false);
-  const [permission, setPermission] = useState<MicPermission>("unknown");
+  const [permission, setPermissionState] = useState<MicPermission>("unknown");
+  const permRef = useRef<MicPermission>("unknown");
+  const setPermission = (p: MicPermission) => {
+    permRef.current = p;
+    setPermissionState(p);
+  };
   const mod = useRef<PitchyModule | null>(null);
   useEffect(() => {
     if (!opts.active) return;
@@ -74,8 +79,8 @@ export function usePitch(opts: { active: boolean; minConfidence?: number; buffer
         // The prompt was refused only when nothing was granted yet (iOS first run); any other failure
         // (permission revoked later in Settings, audio route busy) is surfaced as `error` without guessing.
         setSample(null);
-        setPermission((p) => (p === "unknown" ? "denied" : p));
-        setError(true);
+        if (permRef.current === "unknown") setPermission("denied");
+        else setError(true);
       });
     });
     setError(false);
