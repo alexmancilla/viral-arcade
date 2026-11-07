@@ -1,0 +1,47 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+# One run per branch/PR at a time; a newer push cancels the older run (check + publish) so an older commit can never publish after a newer one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+  eas-update:
+    # Opt-in (repo variable EAS_PREVIEW=true + secret EXPO_TOKEN). Runs on merges only, never on PRs, so the token never meets untrusted code:
+    # develop -> EAS channel "preview" (staging builds), main -> channel "production".
+    if: github.event_name == 'push' && vars.EAS_PREVIEW == 'true'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Publish OTA update for this branch's channel
+        working-directory: apps/arcade
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          CHANNEL: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: eas update --channel "$CHANNEL" --message "${MESSAGE%%$'\n'*}" --non-interactive

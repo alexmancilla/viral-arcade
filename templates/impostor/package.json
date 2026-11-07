@@ -1,0 +1,12 @@
+{
+  "name": "@games/__SLUG__",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run --passWithNoTests" },
+  "dependencies": { "@viral/game-kit": "workspace:*" },
+  "peerDependencies": { "react": "*", "react-native": "*" },
+  "devDependencies": { "@types/react": "~19.3.0", "react": "19.3.0", "react-native": "0.88.1", "typescript": "~5.9.3", "vitest": "^3.2.0" }
+}

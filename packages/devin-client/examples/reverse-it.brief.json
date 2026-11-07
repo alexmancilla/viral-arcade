@@ -1,0 +1,18 @@
+{
+  "brief_id": "brf_demo_reverse_it",
+  "trend": {
+    "title": "Reverse speech challenge",
+    "source_examples": ["https://www.tiktok.com/@example/video/1"],
+    "score": 0.87,
+    "mechanic": "Creator says a phrase reversed; friends guess the original phrase"
+  },
+  "archetype": "guess_phrase",
+  "slug": "reverse-it",
+  "title": "Reverse It",
+  "pitch": "Read the phrase backwards, type the original before the timer ends.",
+  "rules": ["10 rounds, 15 s each", "Phrase is shown with letters reversed", "Score by speed; a wrong guess reveals two letters"],
+  "content_spec": { "wordlist": "common_phrases_en_es", "count": 200 },
+  "success_metric": { "metric": "invite_open_rate", "target": 0.1, "window_days": 7 },
+  "kit_modules": ["timer", "rounds", "scoring", "haptics", "share-card", "deep-link"],
+  "acu_budget": 20
+}

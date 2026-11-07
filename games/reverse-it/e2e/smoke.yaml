@@ -1,0 +1,11 @@
+appId: com.viral.arcade
+---
+- launchApp
+- tapOn: "Reverse It"
+- tapOn: "Play"
+- assertVisible:
+    id: "shown-phrase"
+- tapOn:
+    id: "guess-input"
+- inputText: "wrong"
+- tapOn: "Guess"

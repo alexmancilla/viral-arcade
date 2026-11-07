@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Arcade",
+    "slug": "viral-arcade",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "arcade",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "runtimeVersion": { "policy": "appVersion" },
+    "updates": { "url": "https://u.expo.dev/REPLACE_WITH_EAS_PROJECT_ID", "fallbackToCacheTimeout": 0 },
+    "splash": { "image": "./assets/splash-icon.png", "resizeMode": "contain", "backgroundColor": "#0E0F14" },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.viral.arcade",
+      "associatedDomains": ["applinks:arcade.example.com"]
+    },
+    "android": {
+      "package": "com.viral.arcade",
+      "adaptiveIcon": { "foregroundImage": "./assets/android-icon-foreground.png", "backgroundImage": "./assets/android-icon-background.png", "monochromeImage": "./assets/android-icon-monochrome.png" },
+      "intentFilters": [
+        { "action": "VIEW", "autoVerify": true, "data": [{ "scheme": "https", "host": "arcade.example.com", "pathPrefix": "/play" }], "category": ["BROWSABLE", "DEFAULT"] }
+      ]
+    },
+    "web": { "favicon": "./assets/favicon.png" },
+    "plugins": ["expo-router"],
+    "extra": {
+      "eas": { "projectId": "REPLACE_WITH_EAS_PROJECT_ID" },
+      "links": { "webHost": "arcade.example.com", "scheme": "arcade" }
+    }
+  }
+}

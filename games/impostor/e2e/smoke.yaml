@@ -1,0 +1,8 @@
+appId: com.viral.arcade
+---
+- launchApp
+- tapOn: "Find the Impostor"
+- tapOn: "Start"
+- tapOn: "Tap to reveal"
+- assertVisible:
+    id: "secret-word"
