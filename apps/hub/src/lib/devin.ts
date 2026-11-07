@@ -9,7 +9,7 @@ export function getDispatcher(): { dispatcher: BuildDispatcher; configured: bool
   const dispatcher = new BuildDispatcher(client, {
     repo: process.env.ARCADE_REPO ?? "github.com/REPLACE/arcade",
     playbookId: process.env.DEVIN_PLAYBOOK_ID || undefined,
-    playbookName: "Viral game builder",
+    playbookName: process.env.DEVIN_SKILL ?? "@skills:build-viral-game",
   });
   return { dispatcher, configured };
 }

@@ -15,7 +15,7 @@ const client = dry ? null : new DevinClient({ apiKey: process.env.DEVIN_API_KEY!
 const dispatcher = new BuildDispatcher(client, {
   repo: process.env.ARCADE_REPO ?? "github.com/REPLACE/arcade",
   playbookId: process.env.DEVIN_PLAYBOOK_ID,
-  playbookName: "Viral game builder",
+  playbookName: process.env.DEVIN_SKILL ?? "@skills:build-viral-game",
 });
 const brief = JSON.parse(readFileSync(file, "utf8"));
 dispatcher

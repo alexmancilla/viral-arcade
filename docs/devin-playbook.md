@@ -1,25 +1,32 @@
-# Viral game builder
+# Build a viral game from an AppBrief (mirror of the Devin skill `build-viral-game`)
 
 ## Overview
-Build one game module in the arcade monorepo from an AppBrief JSON, verify it on a device emulator, open a PR, report structured output.
+The Hub (viral-arcade-hub.vercel.app) approves an AppBrief and starts a Devin session with it. This skill turns that brief into one game module under `games/<slug>` in `github.com/alexmancilla/viral-arcade`, verified on the Android emulator, delivered as a PR into `develop`. The arcade container app ships it over the air once the team enables its flag in the Hub.
 
 ## What's needed from the user
-- The AppBrief JSON inside `<brief>` tags in the prompt. If it is missing or fails `AppBriefSchema` (packages/devin-client/src/brief.ts), stop and report `status=blocked`.
+- The AppBrief JSON inside `<brief>` tags in the prompt (schema: `packages/devin-client/src/brief.ts`, `AppBriefSchema`). If it is missing or invalid, stop and return `status=blocked` with the validation error.
 
 ## Procedure
-1. Read the brief. Confirm `templates/<archetype>` exists; if not, use `templates/guess_phrase` as the base and say so in notes.
-2. Copy the template to `games/<slug>` and replace `__SLUG__`, `__TITLE__`, `__PITCH__`. Register the game in `apps/arcade/src/registry.ts` with `defaultEnabled: false`.
-   Never edit other games, `packages/*` or the app shell in this session; open a GitHub issue describing the change instead.
-3. Implement the mechanic in `games/<slug>/src` using `@viral/game-kit` (timer, rounds, scoring, haptics, share, deep link). Do not reimplement kit features. Keep `config.ts` as the place brief values live.
-4. Generate content from `content_spec` into `games/<slug>/content/*.json`. Respect every constraint in the brief (no copyrighted audio, no platform logos, permission strings for mic or camera).
-5. Emit analytics only through the `analytics` prop (`game_start`, `game_end`, `share_click`, `invite_opened`, `game_exit`). Do not add trackers or native modules. If a native module is truly required, stop and report `status=blocked` with the reason.
-6. Run `pnpm install`, `pnpm typecheck`, `pnpm test`. Start the Android emulator, run `pnpm --filter arcade start` with the dev client (or Expo Go), play through every screen, and save a screenshot per screen. Write `games/<slug>/e2e/smoke.yaml` (Maestro) and run it.
-7. Publish a preview when EAS is configured: `cd apps/arcade && eas update --branch pr-<slug> --message "<brief_id>"`. Put the branch name in the PR. Skip without failing if `EXPO_TOKEN` is absent.
-8. Open a PR titled `game(<slug>): <pitch>` with the screenshots, test output and preview branch.
-9. Provide structured output: `status`, `slug`, `pr_url`, `preview_channel`, `verified_on`, `blockers`, `notes`.
-
-## Forbidden actions
-- Merging, `eas build`, `eas submit`, touching credentials, `app.json` native settings or CI, scraping any website, adding dependencies above 500 KB.
+1. Branch from `develop`: `git fetch origin && git checkout -b devin/<brief_id>-<slug> origin/develop`. Never branch from or target `main`.
+2. Read the brief. Confirm `templates/<archetype>` exists (`guess_phrase`, `impostor`); if not, start from `templates/guess_phrase` and say so in `notes`.
+3. Copy the template to `games/<slug>`, set `package.json` name to `@games/<slug>`, fill `src/config.ts` from the brief (title, pitch, rules, round timing, share mechanic) and register the module in `apps/arcade/src/registry.ts` with `defaultEnabled: false`. Run `pnpm install` so the workspace links it.
+4. Implement the mechanic in `games/<slug>/src/Game.tsx` with `@viral/game-kit` only (`useCountdown`, `roundsReducer`, `speedScore`, `isMatch`, `haptics`, `shareChallenge`, `encodeInvite`, UI primitives). Do not reimplement kit features and do not edit `packages/*`, other games or `apps/arcade` beyond the registry line; if the kit lacks something, note it in `blockers`/`notes` and work around it inside the game folder.
+5. Generate content from `content_spec` into `games/<slug>/content/*.json` (en and es when the content allows). Respect every `constraints` entry (no copyrighted audio, no platform logos, no new permissions).
+6. Emit analytics only through the `analytics` prop (`game_start`, `game_end`, `share_click`, `invite_opened`, `game_exit`). No trackers, no native modules; a mechanic that truly needs a native module ends the session with `status=blocked` and the reason.
+7. Verify: `pnpm typecheck && pnpm test`; start the emulator (`emulator -avd arcade -no-window -no-audio -gpu swiftshader_indirect -no-snapshot &`, `adb wait-for-device`); `cd apps/arcade && EXPO_PUBLIC_HUB_URL=http://10.0.2.2:3000 npx expo start --android`; play every screen and save one screenshot per screen (`adb exec-out screencap -p`). Write `games/<slug>/e2e/smoke.yaml` (Maestro, `appId: com.viral.arcade`) and run it with `appId: host.exp.exponent` and no `launchApp` while inside Expo Go.
+8. Open a PR into `develop` titled `game(<slug>): <pitch>` with the screenshots and test output. Do not merge; OTA publishing happens automatically when `develop` merges.
+9. Return structured output: `status` (`pr_opened` | `blocked` | `failed`), `slug`, `pr_url`, `preview_channel` (`preview`), `verified_on` (`["android_emulator"]`), `blockers`, `notes`.
 
 ## Specifications
-- Portrait only, 60 fps on a mid-range Android, cold start under 2 s inside the container, works offline except invites, strings in en and es where content allows.
+- One new folder `games/<slug>` plus one registry line; CI (`check`) green; Maestro smoke flow passes; game is reachable at `arcade://play/<slug>` and hidden from Home until the Hub enables it.
+- Portrait only, works offline except invites, cold start under 2 s inside the container, strings in en (and es where the content allows).
+- Validation: `pnpm typecheck && pnpm test` pass locally, the smoke flow passes on the emulator, and the PR shows a screenshot of every screen.
+
+## Advice and pointers
+- Shells do not load NVM automatically: start commands with `export NVM_DIR=$HOME/.nvm; . $NVM_DIR/nvm.sh`.
+- The Hub reads flags from `/api/flags`; `apps/arcade/src/flags.ts` already handles it, nothing to do in the game.
+- Keep brief values in `config.ts`, not scattered in components, so iteration briefs (`parent_game`) stay small diffs.
+- An iteration brief (`parent_game` set) modifies that existing game folder instead of creating a new one.
+
+## Forbidden actions
+- Merging PRs, pushing to `main` or `develop`, `eas build`, `eas submit`, `eas update`, editing `app.json`/`eas.json`/CI, touching secrets or environment variables, scraping websites, adding dependencies over 500 KB or any native module.
