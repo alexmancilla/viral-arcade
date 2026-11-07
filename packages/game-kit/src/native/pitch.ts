@@ -46,8 +46,11 @@ export function usePitch(opts: { active: boolean; minConfidence?: number; buffer
   sample: PitchSample | null;
   available: boolean;
   permission: MicPermission;
+  /** Capture could not start although permission was not refused (revoked in Settings, audio route busy). Tell the user to check mic settings. */
+  error: boolean;
 } {
   const [sample, setSample] = useState<PitchSample | null>(null);
+  const [error, setError] = useState(false);
   const [permission, setPermission] = useState<MicPermission>("unknown");
   const mod = useRef<PitchyModule | null>(null);
   useEffect(() => {
@@ -68,12 +71,14 @@ export function usePitch(opts: { active: boolean; minConfidence?: number; buffer
         else setSample(null);
       });
       pitchy.start().catch(() => {
-        // A failed start only means "denied" when permission was never granted (iOS prompt refused);
-        // on Android the grant is known, so a failure is an audio-route problem, not a permission one.
+        // The prompt was refused only when nothing was granted yet (iOS first run); any other failure
+        // (permission revoked later in Settings, audio route busy) is surfaced as `error` without guessing.
         setSample(null);
-        setPermission((p) => (p === "granted" ? p : "denied"));
+        setPermission((p) => (p === "unknown" ? "denied" : p));
+        setError(true);
       });
     });
+    setError(false);
     return () => {
       cancelled = true;
       sub?.remove();
@@ -81,5 +86,5 @@ export function usePitch(opts: { active: boolean; minConfidence?: number; buffer
       setSample(null);
     };
   }, [opts.active, opts.bufferSize, opts.minConfidence]);
-  return { sample, available: mod.current !== null || pitchAvailable, permission };
+  return { sample, available: mod.current !== null || pitchAvailable, permission, error };
 }
