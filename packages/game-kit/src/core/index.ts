@@ -4,3 +4,4 @@ export * from "./text";
 export * from "./rounds";
 export * from "./deeplink";
 export * from "./analytics";
+export * from "./pitch";

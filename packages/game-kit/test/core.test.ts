@@ -78,7 +78,7 @@ describe("analytics", () => {
 
 describe("pitch helpers", () => {
   it("maps frequencies to midi notes and folds octaves", async () => {
-    const { hzToMidi, midiToNoteName, centsOff } = await import("../src/native/pitch");
+    const { hzToMidi, midiToNoteName, centsOff } = await import("../src/core/pitch");
     expect(Math.round(hzToMidi(440))).toBe(69);
     expect(midiToNoteName(60)).toBe("C4");
     expect(Math.abs(centsOff(261.63, 60))).toBeLessThan(2); // C4 vs C4
