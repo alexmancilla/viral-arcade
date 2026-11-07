@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PermissionsAndroid, Platform } from "react-native";
 
 /**
  * Real-time voice pitch from the microphone (react-native-pitchy, a native module shipped in the
@@ -47,22 +48,46 @@ export function centsOff(hz: number, targetMidi: number, anyOctave = true): numb
   return diff * 100;
 }
 
-export function usePitch(opts: { active: boolean; minConfidence?: number; bufferSize?: number }): { sample: PitchSample | null; available: boolean } {
+export type MicPermission = "unknown" | "granted" | "denied";
+
+async function requestMic(): Promise<MicPermission> {
+  if (Platform.OS !== "android") return "granted"; // iOS prompts on first capture using NSMicrophoneUsageDescription
+  const r = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+  return r === PermissionsAndroid.RESULTS.GRANTED ? "granted" : "denied";
+}
+
+export function usePitch(opts: { active: boolean; minConfidence?: number; bufferSize?: number }): {
+  sample: PitchSample | null;
+  available: boolean;
+  permission: MicPermission;
+} {
   const [sample, setSample] = useState<PitchSample | null>(null);
+  const [permission, setPermission] = useState<MicPermission>("unknown");
   const mod = useRef<PitchyModule | null>(null);
   useEffect(() => {
     if (!opts.active) return;
     const pitchy = (mod.current ??= loadPitchy());
     if (!pitchy) return;
-    pitchy.init({ bufferSize: opts.bufferSize ?? 4096 });
-    const sub = pitchy.addListener((e) => {
-      if (e.pitch > 0 && e.confidence >= (opts.minConfidence ?? 0.8)) setSample({ hz: e.pitch, confidence: e.confidence, volume: e.volume });
+    let cancelled = false;
+    let sub: { remove(): void } | null = null;
+    requestMic().then((perm) => {
+      if (cancelled) return;
+      setPermission(perm);
+      if (perm !== "granted") return;
+      pitchy.init({ bufferSize: opts.bufferSize ?? 4096 });
+      sub = pitchy.addListener((e) => {
+        // Silence or an unsure estimate clears the sample so games never act on a stale note.
+        if (e.pitch > 0 && e.confidence >= (opts.minConfidence ?? 0.8)) setSample({ hz: e.pitch, confidence: e.confidence, volume: e.volume });
+        else setSample(null);
+      });
+      pitchy.start().catch(() => setSample(null));
     });
-    pitchy.start().catch(() => setSample(null));
     return () => {
-      sub.remove();
+      cancelled = true;
+      sub?.remove();
       pitchy.stop().catch(() => undefined);
+      setSample(null);
     };
   }, [opts.active, opts.bufferSize, opts.minConfidence]);
-  return { sample, available: mod.current !== null || pitchAvailable };
+  return { sample, available: mod.current !== null || pitchAvailable, permission };
 }
