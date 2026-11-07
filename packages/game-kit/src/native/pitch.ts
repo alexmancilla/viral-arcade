@@ -68,8 +68,10 @@ export function usePitch(opts: { active: boolean; minConfidence?: number; buffer
         else setSample(null);
       });
       pitchy.start().catch(() => {
+        // A failed start only means "denied" when permission was never granted (iOS prompt refused);
+        // on Android the grant is known, so a failure is an audio-route problem, not a permission one.
         setSample(null);
-        setPermission("denied");
+        setPermission((p) => (p === "granted" ? p : "denied"));
       });
     });
     return () => {
