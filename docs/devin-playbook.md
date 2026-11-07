@@ -27,6 +27,7 @@ The Hub (viral-arcade-hub.vercel.app) approves an AppBrief and starts a Devin se
 - The Hub reads flags from `/api/flags`; `apps/arcade/src/flags.ts` already handles it, nothing to do in the game.
 - Keep brief values in `config.ts`, not scattered in components, so iteration briefs (`parent_game`) stay small diffs.
 - An iteration brief (`parent_game` set) modifies that existing game folder instead of creating a new one.
+- Voice/singing games: use `usePitch`, `centsOff`, `midiToNoteName` from `@viral/game-kit` (backed by react-native-pitchy, in the arcade binary since 1.1.0). Show a "update the Arcade app" message when `available` is false; never add your own audio module.
 
 ## Forbidden actions
 - Merging PRs, pushing to `main` or `develop`, `eas build`, `eas submit`, `eas update`, editing `app.json`/`eas.json`/CI, touching secrets or environment variables, scraping websites, adding dependencies over 500 KB or any native module.
