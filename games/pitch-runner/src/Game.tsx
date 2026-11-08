@@ -37,7 +37,7 @@ export function PitchRunnerGame({ invite, analytics, onExit }: GameProps) {
     (run: RunState) => {
       haptics.error();
       const distance = distanceScore(run);
-      const newBest = distance > sessionBest;
+      const newBest = distance > sessionBest.distance;
       if (newBest) sessionBest = { distance, walls: run.passed, seed };
       setBestRun(sessionBest);
       setLast({ distance, walls: run.passed, newBest });
