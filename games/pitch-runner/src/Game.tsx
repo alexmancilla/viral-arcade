@@ -10,13 +10,15 @@ const t = content.strings.en;
 const noteName = (pc: number) => content.names.en[pc] ?? "?";
 
 /** Best distance for this app session. The kit has no persistent storage module yet (see PR notes). */
-let sessionBest = 0;
+let sessionBest = { distance: 0, walls: 0, seed: 0 };
 
 export function PitchRunnerGame({ invite, analytics, onExit }: GameProps) {
   const [stage, setStage] = useState<Stage>("home");
   const [seed, setSeed] = useState(() => invite?.s ?? Math.floor(Math.random() * 1e9));
   const walls = useMemo(() => buildWalls(seed, config), [seed]);
-  const [best, setBest] = useState(sessionBest);
+  const [bestRun, setBestRun] = useState(sessionBest);
+  const best = bestRun.distance;
+  const bestWalls = useMemo(() => buildWalls(bestRun.seed, config).slice(0, 8), [bestRun.seed]);
   const [last, setLast] = useState<{ distance: number; walls: number; newBest: boolean } | null>(null);
   const [micAttempt, setMicAttempt] = useState(0);
   const startedAt = useRef(0);
@@ -36,18 +38,18 @@ export function PitchRunnerGame({ invite, analytics, onExit }: GameProps) {
       haptics.error();
       const distance = distanceScore(run);
       const newBest = distance > sessionBest;
-      if (newBest) sessionBest = distance;
-      setBest(sessionBest);
+      if (newBest) sessionBest = { distance, walls: run.passed, seed };
+      setBestRun(sessionBest);
       setLast({ distance, walls: run.passed, newBest });
       analytics.track({ name: "game_end", game: config.slug, score: distance, rounds: run.passed, durationMs: Date.now() - startedAt.current });
       setStage("result");
     },
-    [analytics],
+    [analytics, seed],
   );
 
   const share = async () => {
     analytics.track({ name: "share_click", game: config.slug, channel: "native" });
-    await shareChallenge({ title: config.title, message: t.shareMessage.replace("{d}", String(best)), invite: { g: config.slug, s: seed, sc: best } });
+    await shareChallenge({ title: config.title, message: t.shareMessage.replace("{d}", String(best)), invite: { g: config.slug, s: bestRun.seed, sc: best } });
   };
 
   const exitRound = (atWall: number) => {
@@ -90,9 +92,9 @@ export function PitchRunnerGame({ invite, analytics, onExit }: GameProps) {
         <View style={styles.card} testID="share-card">
           <Text style={styles.cardKicker}>{config.title}</Text>
           <Text style={styles.cardScore}>{best} m</Text>
-          <Text style={styles.cardLine}>{t.best} · {last?.walls ?? 0} {t.walls}</Text>
+          <Text style={styles.cardLine}>{t.best} · {bestRun.walls} {t.walls}</Text>
           <View style={styles.cardNotes}>
-            {walls.slice(0, 8).map((w) => (
+            {bestWalls.map((w) => (
               <Text key={w.index} style={styles.cardNote}>{noteName(w.pc)}</Text>
             ))}
           </View>
