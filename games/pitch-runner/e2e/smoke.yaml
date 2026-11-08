@@ -1,0 +1,16 @@
+appId: com.viral.arcade
+---
+- launchApp
+- tapOn: "Pitch Runner"
+- assertVisible: "Play"
+- tapOn: "Play"
+# Android asks for the microphone the first time; allow it if the system dialog shows.
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- assertVisible:
+    id: "pitch-field"
+- assertVisible:
+    id: "next-note"
