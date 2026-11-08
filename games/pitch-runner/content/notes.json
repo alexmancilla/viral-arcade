@@ -1,0 +1,29 @@
+{
+  "names": {
+    "en": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+    "es": ["Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"]
+  },
+  "strings": {
+    "en": {
+      "howTo": "Sing to steer. Each wall has a hole at its note in every octave: hit the note and fly through.",
+      "noLives": "No lives: one crash ends the run. Score is the distance.",
+      "best": "Best",
+      "play": "Play",
+      "singToStart": "Sing any note to steer",
+      "needsArcade": "Pitch Runner needs the latest Arcade app to hear you sing. It can't use the microphone here (for example in Expo Go).",
+      "permissionDenied": "Pitch Runner listens to your voice to steer. Audio never leaves your phone. Allow the microphone to play.",
+      "micError": "The microphone could not start. Check that microphone access is allowed in Settings and no other app is using it.",
+      "waitingMic": "Waiting for the microphone…",
+      "retry": "Try again",
+      "openSettings": "Open Settings",
+      "crashed": "Crashed!",
+      "distance": "Distance",
+      "walls": "walls",
+      "newBest": "New best!",
+      "shareCard": "Share card",
+      "challenge": "Challenge a friend",
+      "playAgain": "Play again",
+      "shareMessage": "I flew {d} m in Pitch Runner by singing. Same walls, can you go further?"
+    }
+  }
+}

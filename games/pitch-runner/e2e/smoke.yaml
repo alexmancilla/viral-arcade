@@ -1,0 +1,28 @@
+appId: com.viral.arcade
+---
+# Dev client only (Expo Go cannot load react-native-pitchy).
+- launchApp
+- tapOn: "Pitch Runner"
+- assertVisible: "Play"
+- tapOn: "Play"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+# The emulator's virtual mic can feed noise that starts and crashes the run quickly,
+# so accept either the round or the result screen.
+- runFlow:
+    when:
+      visible:
+        id: "pitch-field"
+    commands:
+      - assertVisible:
+          id: "next-note"
+- runFlow:
+    when:
+      visible: "Play again"
+    commands:
+      - assertVisible: "Crashed!"
+      - assertVisible: "Share card"
+- assertVisible: "Pitch Runner"
