@@ -42,6 +42,8 @@ jobs:
         working-directory: apps/arcade
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # Same Hub per channel as the build profiles in apps/arcade/eas.json; `eas update` ignores build-profile env.
+          EXPO_PUBLIC_HUB_URL: ${{ github.ref_name == 'main' && 'https://viral-arcade-hub.vercel.app' || 'https://viral-arcade-hub-git-develop-alexs-projects-b8454721.vercel.app' }}
           CHANNEL: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
           MESSAGE: ${{ github.event.head_commit.message }}
         run: eas update --channel "$CHANNEL" --message "${MESSAGE%%$'\n'*}" --non-interactive
